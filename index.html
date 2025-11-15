@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Classroom Attendance System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Classroom Attendance System</h1>
+        <div class="button-row">
+            <button id="absentBtn" class="mode-btn absent active">Absent</button>
+            <button id="swapBtn" class="swap-btn">Swap Layout</button>
+        </div>
+        <div id="classroom" class="classroom">
+            <div id="columns-wrapper" class="columns-wrapper">
+                <div class="seating-column" id="left-column"></div>
+                <div class="seating-column" id="right-column"></div>
+            </div>
+        </div>
+        <div class="output-row">
+            <div class="output-box" id="presentList">Present Students: </div>
+            <div class="output-box" id="absentList">Absent Students: </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
