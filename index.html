@@ -4,22 +4,189 @@
     <meta charset="UTF-8">
     <title>Classroom Attendance System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive classroom attendance tracking system with real-time seating chart visualization">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Classroom Attendance System</h1>
-        <div id="classroom" class="classroom">
-            <div id="columns-wrapper" class="columns-wrapper">
-                <div class="seating-column" id="left-column"></div>
-                <div class="seating-column" id="right-column"></div>
+    <div class="app-wrapper">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="logo-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1>Attendance Tracker</h1>
+                        <p class="header-subtitle" id="dateDisplay"></p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="stats-pills">
+                        <div class="stat-pill present-pill" id="presentCount">
+                            <span class="stat-dot present-dot"></span>
+                            <span class="stat-label">Present</span>
+                            <span class="stat-value" id="presentNum">0</span>
+                        </div>
+                        <div class="stat-pill absent-pill" id="absentCount">
+                            <span class="stat-dot absent-dot"></span>
+                            <span class="stat-label">Absent</span>
+                            <span class="stat-value" id="absentNum">0</span>
+                        </div>
+                        <div class="stat-pill total-pill" id="totalCount">
+                            <span class="stat-dot total-dot"></span>
+                            <span class="stat-label">Total</span>
+                            <span class="stat-value" id="totalNum">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <button class="tool-btn" id="swapBtn" title="Swap column layout">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="17 1 21 5 17 9"/>
+                        <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                        <polyline points="7 23 3 19 7 15"/>
+                        <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                    </svg>
+                    <span>Swap Layout</span>
+                </button>
+                <button class="tool-btn" id="markAllPresentBtn" title="Mark all students as present">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span>All Present</span>
+                </button>
+                <button class="tool-btn danger-btn" id="markAllAbsentBtn" title="Mark all students as absent">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                    <span>All Absent</span>
+                </button>
+                <button class="tool-btn reset-btn" id="resetBtn" title="Reset all attendance">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="1 4 1 10 7 10"/>
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                    </svg>
+                    <span>Reset</span>
+                </button>
+            </div>
+            <div class="toolbar-right">
+                <button class="tool-btn export-btn" id="exportBtn" title="Copy attendance report to clipboard">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                    </svg>
+                    <span>Copy Report</span>
+                </button>
+                <button class="tool-btn search-btn" id="searchToggle" title="Search for a student">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <span>Search</span>
+                </button>
             </div>
         </div>
-        <div class="output-row">
-            <div class="output-box" id="presentList">Present Students: </div>
-            <div class="output-box" id="absentList">Absent Students: </div>
+
+        <!-- Search Bar (hidden by default) -->
+        <div class="search-bar" id="searchBar" style="display:none;">
+            <div class="search-input-wrapper">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="number" id="searchInput" placeholder="Enter roll number to highlight..." min="1">
+                <button class="search-close" id="searchClose">&times;</button>
+            </div>
         </div>
+
+        <!-- Attendance Progress Bar -->
+        <div class="progress-section">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <span class="progress-text" id="progressText">0% Present</span>
+        </div>
+
+        <!-- Classroom Seating -->
+        <div class="classroom-label">
+            <span class="label-text">📋 Seating Chart</span>
+            <div class="label-line"></div>
+        </div>
+        <div id="classroom" class="classroom">
+            <div id="columns-wrapper" class="columns-wrapper">
+                <div class="column-label">Left Section</div>
+                <div class="seating-column" id="left-column"></div>
+                <div class="aisle">
+                    <div class="aisle-line"></div>
+                </div>
+                <div class="seating-column" id="right-column"></div>
+                <div class="column-label">Right Section</div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-circle present-legend"></div>
+                <span>Present</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle absent-legend"></div>
+                <span>Absent</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-circle highlight-legend"></div>
+                <span>Highlighted</span>
+            </div>
+        </div>
+
+        <!-- Output Section -->
+        <div class="output-section">
+            <div class="output-card present-card">
+                <div class="output-card-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <h3>Present Students</h3>
+                </div>
+                <div class="output-card-body" id="presentList">—</div>
+            </div>
+            <div class="output-card absent-card">
+                <div class="output-card-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                    <h3>Absent Students</h3>
+                </div>
+                <div class="output-card-body" id="absentList">—</div>
+            </div>
+        </div>
+
+        <!-- Toast notification -->
+        <div class="toast" id="toast"></div>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>Classroom Attendance System &bull; Click on a seat to toggle attendance</p>
+        </footer>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
