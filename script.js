@@ -83,7 +83,11 @@ function render() {
                     c.className = 'seat-circle';
                     if (absent[v]) c.classList.add('absent');
                     c.textContent = v;
+                    c.tabIndex = 0;
+                    c.setAttribute('role', 'button');
+                    c.setAttribute('aria-label', 'Roll ' + v + (absent[v] ? ' absent' : ' present'));
                     c.onclick = () => toggle(v);
+                    c.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(v); } };
                     s.appendChild(c);
                     rd.appendChild(s);
                 } else {
