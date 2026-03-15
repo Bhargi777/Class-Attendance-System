@@ -1,8 +1,4 @@
-// ============================================
-// Classroom Attendance System — Main Script
-// ============================================
-
-// --- Seating Configuration ---
+// Seating layout
 const leftColumn = [
     [54, 53, 43, 7, 46, 40],
     [34, 48, 18, 39, 25, 49],
@@ -21,281 +17,124 @@ const rightColumn = [
     [12, 68, 44, 19, 50, 58]
 ];
 
-// --- Get all valid student roll numbers ---
-const getAllStudentNumbers = () => {
-    const nums = [];
-    [leftColumn, rightColumn].forEach(col =>
-        col.forEach(row =>
-            row.forEach(val => { if (val) nums.push(val); })
-        )
-    );
-    return nums;
-};
-const allStudentNumbers = getAllStudentNumbers();
+// Collect all roll numbers
+const allStudents = [];
+[leftColumn, rightColumn].forEach(c =>
+    c.forEach(r => r.forEach(v => { if (v) allStudents.push(v); }))
+);
 
-// --- State ---
-const statusMap = {};  // roll -> "absent"
-let swap = false;
-let highlightedRoll = null;
+// State
+const absent = {};
+let swapped = false;
 
-// --- Date Display ---
-function setDateDisplay() {
-    const now = new Date();
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const dateStr = now.toLocaleDateString('en-US', options);
-    document.getElementById('dateDisplay').textContent = dateStr;
+// Date
+(function () {
+    const d = new Date();
+    const s = d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    document.getElementById('dateDisplay').textContent = s;
+})();
+
+// Toast
+let _t;
+function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(_t);
+    _t = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-// --- Toast Notification ---
-let toastTimeout = null;
-function showToast(message) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.classList.add('show');
-    if (toastTimeout) clearTimeout(toastTimeout);
-    toastTimeout = setTimeout(() => {
-        toast.classList.remove('show');
-    }, 2500);
-}
+// Render
+function render() {
+    const L = document.getElementById('left-column');
+    const R = document.getElementById('right-column');
+    L.innerHTML = '';
+    R.innerHTML = '';
+    const cols = swapped ? [rightColumn, leftColumn] : [leftColumn, rightColumn];
 
-// --- Render Seating Chart ---
-function renderSeating() {
-    const left = document.getElementById("left-column");
-    const right = document.getElementById("right-column");
-    left.innerHTML = "";
-    right.innerHTML = "";
-
-    const cols = swap ? [rightColumn, leftColumn] : [leftColumn, rightColumn];
-
-    [left, right].forEach((colDiv, idx) => {
-        cols[idx].forEach((row) => {
-            const rowDiv = document.createElement("div");
-            rowDiv.className = "seat-row";
-
-            row.forEach(seatVal => {
-                if (seatVal) {
-                    const seat = document.createElement("div");
-                    seat.className = "seat";
-
-                    const circ = document.createElement("div");
-                    circ.className = "seat-circle";
-                    circ.textContent = seatVal;
-                    circ.setAttribute("data-roll", seatVal);
-
-                    // Apply status classes
-                    if (statusMap[seatVal] === "absent") {
-                        circ.classList.add("absent");
-                    }
-
-                    // Apply highlight
-                    if (highlightedRoll === seatVal) {
-                        circ.classList.add("highlighted");
-                    }
-
-                    circ.onclick = () => handleSeatClick(seatVal);
-                    seat.appendChild(circ);
-                    rowDiv.appendChild(seat);
+    [L, R].forEach((div, i) => {
+        cols[i].forEach(row => {
+            const rd = document.createElement('div');
+            rd.className = 'seat-row';
+            row.forEach(v => {
+                if (v) {
+                    const s = document.createElement('div');
+                    s.className = 'seat';
+                    const c = document.createElement('div');
+                    c.className = 'seat-circle';
+                    if (absent[v]) c.classList.add('absent');
+                    c.textContent = v;
+                    c.onclick = () => toggle(v);
+                    s.appendChild(c);
+                    rd.appendChild(s);
                 } else {
-                    const empty = document.createElement("div");
-                    empty.className = "empty-seat";
-                    rowDiv.appendChild(empty);
+                    const e = document.createElement('div');
+                    e.className = 'empty-seat';
+                    rd.appendChild(e);
                 }
             });
-
-            colDiv.appendChild(rowDiv);
+            div.appendChild(rd);
         });
     });
 }
 
-// --- Handle Seat Click ---
-function handleSeatClick(rollNo) {
-    if (statusMap[rollNo] === "absent") {
-        delete statusMap[rollNo];
-        showToast(`Roll #${rollNo} marked as Present ✓`);
+// Toggle
+function toggle(roll) {
+    if (absent[roll]) {
+        delete absent[roll];
+        toast('Roll ' + roll + ' → present');
     } else {
-        statusMap[rollNo] = "absent";
-        showToast(`Roll #${rollNo} marked as Absent ✗`);
+        absent[roll] = 1;
+        toast('Roll ' + roll + ' → absent');
     }
-    renderSeating();
-    updateLists();
-    updateStats();
-    updateProgress();
+    refresh();
 }
 
-// --- Update Present/Absent Lists ---
-function updateLists() {
-    const absentList = Object.entries(statusMap)
-        .filter(([, v]) => v === "absent")
-        .map(([k]) => +k)
-        .sort((a, b) => a - b);
+// Refresh everything
+function refresh() {
+    render();
+    const aList = Object.keys(absent).map(Number).sort((a, b) => a - b);
+    const pList = allStudents.filter(n => !absent[n]).sort((a, b) => a - b);
 
-    const presentList = allStudentNumbers
-        .filter(n => !statusMap[n])
-        .sort((a, b) => a - b);
+    document.getElementById('presentList').textContent = pList.length ? pList.join(', ') : '—';
+    document.getElementById('absentList').textContent = aList.length ? aList.join(', ') : '—';
+    document.getElementById('presentNum').textContent = pList.length;
+    document.getElementById('absentNum').textContent = aList.length;
+    document.getElementById('totalNum').textContent = allStudents.length;
 
-    const presentDiv = document.getElementById("presentList");
-    const absentDiv = document.getElementById("absentList");
-
-    if (presentList.length) {
-        presentDiv.textContent = presentList.join(", ");
-    } else {
-        presentDiv.textContent = "—";
-    }
-
-    if (absentList.length) {
-        absentDiv.textContent = absentList.join(", ");
-    } else {
-        absentDiv.textContent = "—";
-    }
+    const pct = Math.round((pList.length / allStudents.length) * 100);
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressText').textContent = pct + '%';
 }
 
-// --- Update Stats Pills ---
-function updateStats() {
-    const absentCount = Object.values(statusMap).filter(v => v === "absent").length;
-    const presentCount = allStudentNumbers.length - absentCount;
-
-    document.getElementById("presentNum").textContent = presentCount;
-    document.getElementById("absentNum").textContent = absentCount;
-    document.getElementById("totalNum").textContent = allStudentNumbers.length;
-}
-
-// --- Update Progress Bar ---
-function updateProgress() {
-    const absentCount = Object.values(statusMap).filter(v => v === "absent").length;
-    const presentCount = allStudentNumbers.length - absentCount;
-    const percentage = Math.round((presentCount / allStudentNumbers.length) * 100);
-
-    const bar = document.getElementById("progressBar");
-    const text = document.getElementById("progressText");
-
-    bar.style.width = percentage + "%";
-    text.textContent = percentage + "% Present";
-}
-
-// --- Swap Layout ---
-document.getElementById("swapBtn").onclick = function () {
-    swap = !swap;
-    renderSeating();
-    showToast("Layout swapped 🔄");
+// Swap
+document.getElementById('swapBtn').onclick = function () {
+    swapped = !swapped;
+    render();
+    toast('Sides swapped');
 };
 
-// --- Mark All Present ---
-document.getElementById("markAllPresentBtn").onclick = function () {
-    Object.keys(statusMap).forEach(key => delete statusMap[key]);
-    renderSeating();
-    updateLists();
-    updateStats();
-    updateProgress();
-    showToast("All students marked as Present ✓");
-};
+// Export
+document.getElementById('exportBtn').onclick = function () {
+    const aList = Object.keys(absent).map(Number).sort((a, b) => a - b);
+    const pList = allStudents.filter(n => !absent[n]).sort((a, b) => a - b);
+    const d = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 
-// --- Mark All Absent ---
-document.getElementById("markAllAbsentBtn").onclick = function () {
-    allStudentNumbers.forEach(n => { statusMap[n] = "absent"; });
-    renderSeating();
-    updateLists();
-    updateStats();
-    updateProgress();
-    showToast("All students marked as Absent ✗");
-};
+    let txt = 'Attendance — ' + d + '\n';
+    txt += 'Present (' + pList.length + '): ' + (pList.join(', ') || 'None') + '\n';
+    txt += 'Absent  (' + aList.length + '): ' + (aList.join(', ') || 'None') + '\n';
+    txt += 'Total: ' + allStudents.length + ' | ' + Math.round((pList.length / allStudents.length) * 100) + '% attendance';
 
-// --- Reset ---
-document.getElementById("resetBtn").onclick = function () {
-    Object.keys(statusMap).forEach(key => delete statusMap[key]);
-    highlightedRoll = null;
-    const searchInput = document.getElementById("searchInput");
-    if (searchInput) searchInput.value = "";
-    renderSeating();
-    updateLists();
-    updateStats();
-    updateProgress();
-    showToast("Attendance reset 🔄");
-};
-
-// --- Copy Report ---
-document.getElementById("exportBtn").onclick = function () {
-    const absentList = Object.entries(statusMap)
-        .filter(([, v]) => v === "absent")
-        .map(([k]) => +k)
-        .sort((a, b) => a - b);
-
-    const presentList = allStudentNumbers
-        .filter(n => !statusMap[n])
-        .sort((a, b) => a - b);
-
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-US', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-    });
-
-    let report = `📋 ATTENDANCE REPORT\n`;
-    report += `📅 Date: ${dateStr}\n`;
-    report += `━━━━━━━━━━━━━━━━━━━━━━\n`;
-    report += `✅ Present (${presentList.length}): ${presentList.join(", ") || "None"}\n`;
-    report += `❌ Absent (${absentList.length}): ${absentList.join(", ") || "None"}\n`;
-    report += `━━━━━━━━━━━━━━━━━━━━━━\n`;
-    report += `📊 Total: ${allStudentNumbers.length} | Present: ${presentList.length} | Absent: ${absentList.length}\n`;
-    report += `📈 Attendance: ${Math.round((presentList.length / allStudentNumbers.length) * 100)}%`;
-
-    navigator.clipboard.writeText(report).then(() => {
-        showToast("Report copied to clipboard! 📋");
-    }).catch(() => {
-        // Fallback for older browsers
-        const textarea = document.createElement("textarea");
-        textarea.value = report;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-        showToast("Report copied to clipboard! 📋");
+    navigator.clipboard.writeText(txt).then(() => toast('Copied!')).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = txt;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        toast('Copied!');
     });
 };
 
-// --- Search / Highlight ---
-const searchToggle = document.getElementById("searchToggle");
-const searchBar = document.getElementById("searchBar");
-const searchInput = document.getElementById("searchInput");
-const searchClose = document.getElementById("searchClose");
-
-searchToggle.onclick = function () {
-    if (searchBar.style.display === "none") {
-        searchBar.style.display = "block";
-        searchInput.focus();
-    } else {
-        searchBar.style.display = "none";
-        highlightedRoll = null;
-        searchInput.value = "";
-        renderSeating();
-    }
-};
-
-searchClose.onclick = function () {
-    searchBar.style.display = "none";
-    highlightedRoll = null;
-    searchInput.value = "";
-    renderSeating();
-};
-
-searchInput.addEventListener("input", function () {
-    const val = parseInt(this.value, 10);
-    if (val && allStudentNumbers.includes(val)) {
-        highlightedRoll = val;
-    } else {
-        highlightedRoll = null;
-    }
-    renderSeating();
-});
-
-// --- Keyboard shortcut: Escape to close search ---
-document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && searchBar.style.display !== "none") {
-        searchClose.click();
-    }
-});
-
-// --- Initialize ---
-setDateDisplay();
-renderSeating();
-updateLists();
-updateStats();
-updateProgress();
+// Init
+refresh();
