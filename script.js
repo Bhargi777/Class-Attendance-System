@@ -23,9 +23,28 @@ const allStudents = [];
     c.forEach(r => r.forEach(v => { if (v) allStudents.push(v); }))
 );
 
-// State
+// State — restore from localStorage if available
 const absent = {};
 let swapped = false;
+
+function loadState() {
+    try {
+        const saved = localStorage.getItem('attendance_absent');
+        if (saved) {
+            const arr = JSON.parse(saved);
+            arr.forEach(n => { absent[n] = 1; });
+        }
+        swapped = localStorage.getItem('attendance_swapped') === '1';
+    } catch (e) { /* ignore */ }
+}
+
+function saveState() {
+    try {
+        const arr = Object.keys(absent).map(Number);
+        localStorage.setItem('attendance_absent', JSON.stringify(arr));
+        localStorage.setItem('attendance_swapped', swapped ? '1' : '0');
+    } catch (e) { /* ignore */ }
+}
 
 // Date
 (function () {
@@ -87,6 +106,7 @@ function toggle(roll) {
         absent[roll] = 1;
         toast('Roll ' + roll + ' → absent');
     }
+    saveState();
     refresh();
 }
 
@@ -110,6 +130,7 @@ function refresh() {
 // Swap
 document.getElementById('swapBtn').onclick = function () {
     swapped = !swapped;
+    saveState();
     render();
     toast('Sides swapped');
 };
@@ -137,4 +158,5 @@ document.getElementById('exportBtn').onclick = function () {
 };
 
 // Init
+loadState();
 refresh();
