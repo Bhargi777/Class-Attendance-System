@@ -157,6 +157,17 @@ document.getElementById('exportBtn').onclick = function () {
     });
 };
 
+// New day — clear everything
+document.getElementById('newDayBtn').onclick = function () {
+    Object.keys(absent).forEach(k => delete absent[k]);
+    try {
+        localStorage.removeItem('attendance_absent');
+    } catch (e) { /* ignore */ }
+    saveState();
+    refresh();
+    toast('Fresh start');
+};
+
 // Init
 loadState();
 refresh();

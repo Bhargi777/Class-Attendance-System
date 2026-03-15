@@ -28,4 +28,3 @@ Open `index.html` in any browser. That's it.
 | `styles.css` | Styling              |
 | `script.js`  | Logic & interactivity|
 
-No build step. No npm. Just files.
