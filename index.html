@@ -43,15 +43,9 @@
         </div>
 
         <div class="actions">
-            <button id="swapBtn" class="btn">
-                ⇄ Swap sides
-            </button>
-            <button id="exportBtn" class="btn btn-outline">
-                ⎘ Copy report
-            </button>
-            <button id="newDayBtn" class="btn btn-outline">
-                ↻ New day
-            </button>
+            <button id="swapBtn" class="btn">⇄ Swap sides</button>
+            <button id="exportBtn" class="btn btn-outline">⎘ Copy report</button>
+            <button id="newDayBtn" class="btn btn-outline">↻ New day</button>
         </div>
 
         <div class="board">
@@ -64,11 +58,17 @@
 
         <div class="lists">
             <div class="list-card list-present">
-                <div class="list-head">✓ Present</div>
+                <div class="list-head">
+                    <span>✓ Present</span>
+                    <button id="copyPresentBtn" class="mini-btn">copy numbers</button>
+                </div>
                 <div class="list-body" id="presentList">—</div>
             </div>
             <div class="list-card list-absent">
-                <div class="list-head">✕ Absent</div>
+                <div class="list-head">
+                    <span>✕ Absent</span>
+                    <button id="copyAbsentBtn" class="mini-btn">copy numbers</button>
+                </div>
                 <div class="list-body" id="absentList">—</div>
             </div>
         </div>

@@ -17,15 +17,22 @@ const rightColumn = [
     [12, 68, 44, 19, 50, 58]
 ];
 
-// Collect all roll numbers
-const allStudents = [];
-[leftColumn, rightColumn].forEach(c =>
-    c.forEach(r => r.forEach(v => { if (v) allStudents.push(v); }))
-);
-
-// State — restore from localStorage if available
+// State
+let allStudents = [];
 const absent = {};
 let swapped = false;
+
+// Initialization
+function initData() {
+    allStudents = [];
+    [leftColumn, rightColumn].forEach(col => {
+        col.forEach(row => {
+            row.forEach(val => {
+                if (val !== null) allStudents.push(val);
+            });
+        });
+    });
+}
 
 function loadState() {
     try {
@@ -35,7 +42,7 @@ function loadState() {
             arr.forEach(n => { absent[n] = 1; });
         }
         swapped = localStorage.getItem('attendance_swapped') === '1';
-    } catch (e) { /* ignore */ }
+    } catch (e) { console.error('Load failed', e); }
 }
 
 function saveState() {
@@ -43,30 +50,32 @@ function saveState() {
         const arr = Object.keys(absent).map(Number);
         localStorage.setItem('attendance_absent', JSON.stringify(arr));
         localStorage.setItem('attendance_swapped', swapped ? '1' : '0');
-    } catch (e) { /* ignore */ }
+    } catch (e) { console.error('Save failed', e); }
 }
 
-// Date
-(function () {
+// UI Updates
+function setDate() {
     const d = new Date();
     const s = d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-    document.getElementById('dateDisplay').textContent = s;
-})();
+    const el = document.getElementById('dateDisplay');
+    if (el) el.textContent = s;
+}
 
-// Toast
 let _t;
 function toast(msg) {
     const el = document.getElementById('toast');
+    if (!el) return;
     el.textContent = msg;
     el.classList.add('show');
     clearTimeout(_t);
     _t = setTimeout(() => el.classList.remove('show'), 2200);
 }
 
-// Render
 function render() {
     const L = document.getElementById('left-column');
     const R = document.getElementById('right-column');
+    if (!L || !R) return;
+    
     L.innerHTML = '';
     R.innerHTML = '';
     const cols = swapped ? [rightColumn, leftColumn] : [leftColumn, rightColumn];
@@ -76,7 +85,7 @@ function render() {
             const rd = document.createElement('div');
             rd.className = 'seat-row';
             row.forEach(v => {
-                if (v) {
+                if (v !== null) {
                     const s = document.createElement('div');
                     s.className = 'seat';
                     const c = document.createElement('div');
@@ -85,7 +94,7 @@ function render() {
                     c.textContent = v;
                     c.tabIndex = 0;
                     c.setAttribute('role', 'button');
-                    c.setAttribute('aria-label', 'Roll ' + v + (absent[v] ? ' absent' : ' present'));
+                    c.setAttribute('aria-label', `Roll ${v} ${absent[v] ? 'absent' : 'present'}`);
                     c.onclick = () => toggle(v);
                     c.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(v); } };
                     s.appendChild(c);
@@ -101,77 +110,98 @@ function render() {
     });
 }
 
-// Toggle
 function toggle(roll) {
     if (absent[roll]) {
         delete absent[roll];
-        toast('Roll ' + roll + ' → present');
+        toast(`Roll ${roll} → present`);
     } else {
         absent[roll] = 1;
-        toast('Roll ' + roll + ' → absent');
+        toast(`Roll ${roll} → absent`);
     }
     saveState();
     refresh();
 }
 
-// Refresh everything
 function refresh() {
     render();
     const aList = Object.keys(absent).map(Number).sort((a, b) => a - b);
     const pList = allStudents.filter(n => !absent[n]).sort((a, b) => a - b);
 
-    document.getElementById('presentList').textContent = pList.length ? pList.join(', ') : '—';
-    document.getElementById('absentList').textContent = aList.length ? aList.join(', ') : '—';
-    document.getElementById('presentNum').textContent = pList.length;
-    document.getElementById('absentNum').textContent = aList.length;
-    document.getElementById('totalNum').textContent = allStudents.length;
+    const elPresent = document.getElementById('presentList');
+    const elAbsent = document.getElementById('absentList');
+    const elPNum = document.getElementById('presentNum');
+    const elANum = document.getElementById('absentNum');
+    const elTNum = document.getElementById('totalNum');
+    const elBar = document.getElementById('progressBar');
+    const elPct = document.getElementById('progressText');
 
-    const pct = Math.round((pList.length / allStudents.length) * 100);
-    document.getElementById('progressBar').style.width = pct + '%';
-    document.getElementById('progressText').textContent = pct + '%';
+    if (elPresent) elPresent.textContent = pList.length ? pList.join(', ') : '—';
+    if (elAbsent) elAbsent.textContent = aList.length ? aList.join(', ') : '—';
+    if (elPNum) elPNum.textContent = pList.length;
+    if (elANum) elANum.textContent = aList.length;
+    if (elTNum) elTNum.textContent = allStudents.length;
+
+    const pct = allStudents.length ? Math.round((pList.length / allStudents.length) * 100) : 0;
+    if (elBar) elBar.style.width = `${pct}%`;
+    if (elPct) elPct.textContent = `${pct}%`;
 }
 
-// Swap
-document.getElementById('swapBtn').onclick = function () {
-    swapped = !swapped;
-    saveState();
-    render();
-    toast('Sides swapped');
-};
+// Event Bindings
+function bindEvents() {
+    const btnSwap = document.getElementById('swapBtn');
+    const btnExport = document.getElementById('exportBtn');
+    const btnCopyPresent = document.getElementById('copyPresentBtn');
+    const btnCopyAbsent = document.getElementById('copyAbsentBtn');
+    const btnNewDay = document.getElementById('newDayBtn');
 
-// Export
-document.getElementById('exportBtn').onclick = function () {
-    const aList = Object.keys(absent).map(Number).sort((a, b) => a - b);
-    const pList = allStudents.filter(n => !absent[n]).sort((a, b) => a - b);
-    const d = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    if (btnSwap) btnSwap.onclick = () => {
+        swapped = !swapped;
+        saveState();
+        render();
+        toast('Sides swapped');
+    };
 
-    let txt = 'Attendance — ' + d + '\n';
-    txt += 'Present (' + pList.length + '): ' + (pList.join(', ') || 'None') + '\n';
-    txt += 'Absent  (' + aList.length + '): ' + (aList.join(', ') || 'None') + '\n';
-    txt += 'Total: ' + allStudents.length + ' | ' + Math.round((pList.length / allStudents.length) * 100) + '% attendance';
+    if (btnExport) btnExport.onclick = () => {
+        const aList = Object.keys(absent).map(Number).sort((a, b) => a - b);
+        const pList = allStudents.filter(n => !absent[n]).sort((a, b) => a - b);
+        const d = new Date().toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        
+        let txt = `Attendance — ${d}\n`;
+        txt += `Present (${pList.length}): ${pList.join(', ') || 'None'}\n`;
+        txt += `Absent  (${aList.length}): ${aList.join(', ') || 'None'}\n`;
+        txt += `Total: ${allStudents.length} | ${Math.round((pList.length / allStudents.length) * 100)}% attendance`;
 
-    navigator.clipboard.writeText(txt).then(() => toast('Copied!')).catch(() => {
-        const ta = document.createElement('textarea');
-        ta.value = txt;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        toast('Copied!');
-    });
-};
+        navigator.clipboard.writeText(txt).then(() => toast('Report copied!'));
+    };
 
-// New day — clear everything
-document.getElementById('newDayBtn').onclick = function () {
-    Object.keys(absent).forEach(k => delete absent[k]);
-    try {
+    if (btnCopyPresent) btnCopyPresent.onclick = () => {
+        const pList = allStudents.filter(n => !absent[n]).sort((a, b) => a - b);
+        const txt = pList.join(', ');
+        if (!txt) return toast('No students present');
+        navigator.clipboard.writeText(txt).then(() => toast('Present list copied!'));
+    };
+
+    if (btnCopyAbsent) btnCopyAbsent.onclick = () => {
+        const aList = Object.keys(absent).map(Number).sort((a, b) => a - b);
+        const txt = aList.join(', ');
+        if (!txt) return toast('No students absent');
+        navigator.clipboard.writeText(txt).then(() => toast('Absent list copied!'));
+    };
+
+    if (btnNewDay) btnNewDay.onclick = () => {
+        Object.keys(absent).forEach(k => delete absent[k]);
         localStorage.removeItem('attendance_absent');
-    } catch (e) { /* ignore */ }
-    saveState();
-    refresh();
-    toast('Fresh start');
-};
+        saveState();
+        refresh();
+        toast('Fresh start');
+    };
+}
 
-// Init
-loadState();
-refresh();
+// App start
+document.addEventListener('DOMContentLoaded', () => {
+    initData();
+    loadState();
+    setDate();
+    bindEvents();
+    refresh();
+});
